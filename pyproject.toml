@@ -20,6 +20,7 @@ line-length = 77
 insitudata_loader = { path = ".", editable = true }
 
 [tool.pixi.tasks]
+build-s2-tiles-file = { cmd = "python -m scripts.create_tile_csv_file" }
 
 [tool.pixi.dependencies]
 python = "3.12.*"
@@ -39,3 +40,5 @@ aiohttp = ">=3.13.3,<4"
 remotezip = ">=0.12.3,<0.13"
 validators = ">=0.35.0,<0.36"
 fiona = ">=1.10.1,<2"
+pyyaml = ">=6.0.3,<7"
+colorlog = ">=6.10.1,<7"
