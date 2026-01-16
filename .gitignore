@@ -3,3 +3,6 @@
 !.pixi/config.toml
 */*.log
 data/out/*
+*.pyc 
+__pycache_/
+
