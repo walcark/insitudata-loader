@@ -2,24 +2,31 @@
 Format the CSV file with sample points from the GLORIA dataset.
 """
 
-from pygeodes import Geodes
-
-import insitudata_loader.utils as utils
-import insitudata_loader.core as core
+from insitudata_loader.core import Pipeline
+from insitudata_loader.sources.gloria import GloriaAdapter
+from insitudata_loader.satellites.sentinel2 import S2SRF, TilesLocator
+from insitudata_loader.transforms import (
+    FilterDate,
+    ComputeDayBounds,
+    ConvolveToSatelliteBands,
+    PlotRrs,
+    SaveToCsv,
+)
 
 
 def main():
-    data = core.GloriaInSituData(keep_nan=False)
+    data = GloriaAdapter(keep_nan=False).load()
 
-    pipeline: utils.Pipeline = utils.Pipeline(
-        core.TilesLocator(),
-        core.FilterDate(datemin="2017-01-01", datemax="2025-01-01"),
-        core.ComputeS2BandRrs(
+    pipeline = Pipeline(
+        TilesLocator(),
+        FilterDate(datemin="2017-01-01", datemax="2025-01-01"),
+        ConvolveToSatelliteBands(
+            srf=S2SRF(),
             sat=["S2A", "S2B"],
             bands=["B1", "B2", "B3", "B4", "B5", "B6", "B7"],
         ),
-        core.ComputeDayBounds(),
-        core.PlotRrs(
+        ComputeDayBounds(),
+        PlotRrs(
             sat=["S2A", "S2B"],
             bands=["B1", "B3"],
             metadata=[
@@ -28,7 +35,7 @@ def main():
                 "AOT",
             ],
         ),
-        core.SaveToCsv("data/out/gloria_samples.csv"),
+        SaveToCsv("data/out/gloria_samples.csv"),
     )
 
     final_data = pipeline(data)

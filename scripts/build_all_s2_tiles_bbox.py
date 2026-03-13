@@ -15,14 +15,14 @@ import pandas as pd
 import requests
 from tqdm import tqdm
 
-from insitudata_loader.utils import DATA_PATH
+from insitudata_loader.utils import S2_TILES_PATH
 
 TILING_GRID_URL = (
     "https://github.com/justinelliotmeyers/Sentinel-2-Shapefile-Index"
     "/archive/refs/heads/master.zip"
 )
 EXTRACT_DIR = Path("/tmp/s2_tiles_grid/")
-OUTPUT_PATH = DATA_PATH / "sentinel2/tiles_bbox_all.csv"
+OUTPUT_PATH = S2_TILES_PATH
 
 
 def download_and_extract(url: str, extract_dir: Path) -> None:
