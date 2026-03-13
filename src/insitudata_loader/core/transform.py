@@ -8,8 +8,10 @@ License : MIT
 Summary : Methods to transform InSituData instance.
 """
 
+from pathlib import Path
 from rich.progress import track
 from pygeodes import Geodes
+import matplotlib.pyplot as plt
 import pandas as pd
 
 from insitudata_loader.utils import (
@@ -17,6 +19,7 @@ from insitudata_loader.utils import (
     search_items_in_geodes,
     GeodesCollectionType,
     DATA_PATH,
+    S2SRF,
 )
 from .data import InSituData
 
@@ -28,32 +31,27 @@ class TilesLocator:
     """
 
     def __call__(self, insitu: InSituData) -> InSituData:
-        df_tiles = pd.read_csv(DATA_PATH / "sentinel2/tiles_bbox.csv")
+        df_tiles = pd.read_csv(DATA_PATH / "sentinel2/tiles_bbox_all.csv")
 
-        df_pts = (
-            insitu.df.copy()
-            .reset_index(drop=False)
-            .rename(columns={"index": "pt"})
-        )
+        lon_min = df_tiles["lon_min"].to_numpy()
+        lon_max = df_tiles["lon_max"].to_numpy()
+        lat_min = df_tiles["lat_min"].to_numpy()
+        lat_max = df_tiles["lat_max"].to_numpy()
+        tile_names = df_tiles["tile"].to_numpy()
 
-        cross = df_pts.merge(df_tiles, how="cross")
+        tiles = []
+        for _, row in insitu.df.iterrows():
+            lon, lat = row["Longitude"], row["Latitude"]
+            mask = (
+                (lon >= lon_min)
+                & (lon <= lon_max)
+                & (lat >= lat_min)
+                & (lat <= lat_max)
+            )
+            idx = mask.nonzero()[0]
+            tiles.append(tile_names[idx[0]] if len(idx) > 0 else pd.NA)
 
-        inside = (
-            (cross["Longitude"] >= cross["lon_min"])
-            & (cross["Longitude"] <= cross["lon_max"])
-            & (cross["Latitude"] >= cross["lat_min"])
-            & (cross["Latitude"] <= cross["lat_max"])
-        )
-
-        matches = cross.loc[inside, ["pt", "tile"]].drop_duplicates("pt")
-
-        out = (
-            df_pts.merge(matches, on="pt", how="left")
-            .set_index("pt", drop=True)
-            .sort_index()
-        )
-
-        return insitu.add_column("tile", out["tile"].to_list())
+        return insitu.add_column("tile", tiles)
 
 
 class FilterDate:
@@ -112,6 +110,143 @@ class ComputeDayBounds:
 
         out = insitu.add_column("datemin", datemin)
         return out.add_column("datemax", datemax)
+
+
+class ComputeS2BandRrs:
+    """
+    For each sample, convolves the full Rrs_mean spectrum with the
+    Spectral Response Function of each requested Sentinel-2 band.
+    Adds columns named `Rrs_<sat>_<band>` to the dataset.
+
+    Parameters
+    ----------
+    bands : list[str]
+        Bands to compute, e.g. ["B1", "B2"].
+    sat : list[str] | None
+        Satellites to compute, e.g. ["S2A", "S2B"]. Defaults to all.
+    """
+
+    def __init__(self, bands: list[str], sat: list[str] | None = None):
+        self.bands = bands
+        self.sat = sat if sat is not None else S2SRF.SATELLITES
+        self.srf = S2SRF()
+
+    def __call__(self, insitu: InSituData) -> InSituData:
+        rrs_cols = [
+            c for c in insitu.df.columns if c.startswith("Rrs_mean_")
+        ]
+        wavelengths = [int(c.removeprefix("Rrs_mean_")) for c in rrs_cols]
+
+        result = insitu
+        for sat in self.sat:
+            for band in self.bands:
+                values = []
+                for _, row in result.df.iterrows():
+                    spectrum = pd.Series(
+                        row[rrs_cols].to_numpy(dtype=float),
+                        index=wavelengths,
+                    )
+                    values.append(self.srf.convolve(spectrum, band, sat))
+                result = result.add_column(f"Rrs_{sat}_{band}", values)
+
+        s2_cols = [
+            f"Rrs_{sat}_{band}"
+            for sat in self.sat
+            for band in self.bands
+        ]
+        valid_idx = result.df.dropna(subset=s2_cols).index
+        result = result.filter(valid_idx)
+
+        result.df = result.df.drop(columns=rrs_cols)
+        result.args = list(result.df.columns)
+
+        return result
+
+
+class PlotRrs:
+    """
+    Plots Rrs columns for the requested satellites and bands, with optional
+    metadata subplots stacked above. Passes data through unchanged.
+
+    Parameters
+    ----------
+    sat : list[str] | None
+        Satellites to plot, e.g. ["S2A", "S2B"]. Defaults to all found.
+    bands : list[str] | None
+        Bands to plot, e.g. ["B1", "B3"]. Defaults to all found.
+    metadata : list[str] | None
+        Column names to plot as subplots above the Rrs plot, one per row.
+    """
+
+    def __init__(
+        self,
+        sat: list[str] | None = None,
+        bands: list[str] | None = None,
+        metadata: list[str] | None = None,
+    ):
+        self.sat = sat
+        self.bands = bands
+        self.metadata = metadata or []
+
+    def __call__(self, insitu: InSituData) -> InSituData:
+        rrs_cols = [
+            c for c in insitu.df.columns
+            if c.startswith("Rrs_S2A_") or c.startswith("Rrs_S2B_")
+        ]
+
+        if self.sat is not None:
+            rrs_cols = [
+                c for c in rrs_cols
+                if any(c.startswith(f"Rrs_{s}_") for s in self.sat)
+            ]
+        if self.bands is not None:
+            rrs_cols = [
+                c for c in rrs_cols
+                if any(c.endswith(f"_{b}") for b in self.bands)
+            ]
+
+        x = insitu.df.reset_index(drop=True).index
+        nrows = 1 + len(self.metadata)
+
+        fig, axes = plt.subplots(
+            nrows=nrows,
+            ncols=1,
+            sharex=True,
+            gridspec_kw={"hspace": 0},
+        )
+        if nrows == 1:
+            axes = [axes]
+
+        for ax, col in zip(axes, self.metadata):
+            ax.plot(x, insitu.df[col].reset_index(drop=True))
+            ax.set_ylabel(col)
+            ax.tick_params(labelbottom=False)
+
+        ax_rrs = axes[-1]
+        for col in rrs_cols:
+            label = col.removeprefix("Rrs_")
+            ax_rrs.plot(x, insitu.df[col].reset_index(drop=True), label=label)
+        ax_rrs.set_xlabel("Ligne")
+        ax_rrs.set_ylabel("Rrs")
+        ax_rrs.legend()
+
+        plt.show()
+
+        return insitu
+
+
+class SaveToCsv:
+    """
+    Saves the current dataset to a CSV file at `filepath` and passes
+    the data through unchanged, so it can be chained in a pipeline.
+    """
+
+    def __init__(self, filepath: str | Path):
+        self.filepath = Path(filepath)
+
+    def __call__(self, insitu: InSituData) -> InSituData:
+        insitu.save(self.filepath)
+        return insitu
 
 
 class SearchOnGeodes:

@@ -18,7 +18,7 @@ import pandas as pd
 import numpy as np
 import copy
 
-from insitudata_loader.utils import check_columns, DATA_PATH
+from insitudata_loader.utils import check_columns, DATA_PATH, GLORIA_DATA_PATH
 
 # TODO: ajouter un filtre de NaN en ligne et colonne (selon l'usage)
 
@@ -27,7 +27,9 @@ from insitudata_loader.utils import check_columns, DATA_PATH
 class InSituData:
     filepath: Path | list[Path]
     mandatory_args: list[str]
+    optional_args: list[str] | None = None
     keep_nan: bool = True
+    spectral_col_prefix: str | None = None
     df: pd.DataFrame | None = None
 
     def __post_init__(self):
@@ -39,18 +41,21 @@ class InSituData:
             self.filepath = [self.filepath]
 
         assert all(f.exists() for f in self.filepath)
-        self.df = self.load_data(self.mandatory_args)
+        self.df = self.load_data(self.mandatory_args, self.optional_args)
         self._dropna()
 
         self.args = list(self.df.columns)
 
     def load_data(
-        self, mandatory_args: list[str] | None = None
+        self,
+        mandatory_args: list[str] | None = None,
+        optional_args: list[str] | None = None,
     ) -> pd.DataFrame:
         """
         Load in-situ data from `self.filename`, only for the current
         indexes of `self.df`. If no `mandatory_args` are provided, keep
         all columns from the original database.
+        `optional_args` are loaded but excluded from NaN filtering.
         """
         dfs: list[pd.DataFrame] = [pd.read_csv(f) for f in self.filepath]
 
@@ -66,7 +71,17 @@ class InSituData:
 
         if mandatory_args is not None:
             check_columns(df, mandatory_args)
-            return df.loc[:, mandatory_args]
+            cols = list(mandatory_args)
+            if self.spectral_col_prefix is not None:
+                spectral_cols = [
+                    c for c in df.columns
+                    if c.startswith(self.spectral_col_prefix)
+                ]
+                cols += spectral_cols
+            if optional_args is not None:
+                check_columns(df, optional_args)
+                cols += [c for c in optional_args if c not in cols]
+            return df.loc[:, cols]
 
         return df
 
@@ -113,24 +128,34 @@ class InSituData:
             self.df = self.df.replace(
                 {"nan": np.nan, "NaN": np.nan, "": np.nan}
             )
-            self.df = self.df.dropna()
+            subset = self.mandatory_args if self.mandatory_args else None
+            self.df = self.df.dropna(subset=subset)
 
     def save(self, filepath: Path) -> None:
-        self.df.to_csv(filepath, sep=", ")
+        self.df.to_csv(filepath)
 
 
 GloriaInSituData = partial(
     InSituData,
     filepath=[
-        DATA_PATH / "gloria_2022/GLORIA_meta_and_lab.csv",
-        DATA_PATH / "gloria_2022/GLORIA_Rrs_mean.csv",
-        DATA_PATH / "gloria_2022/GLORIA_Rrs_std.csv",
-        DATA_PATH / "gloria_2022/GLORIA_Rrs.csv",
+        GLORIA_DATA_PATH / "GLORIA_meta_and_lab.csv",
+        GLORIA_DATA_PATH / "GLORIA_Rrs_mean.csv",
+        GLORIA_DATA_PATH / "GLORIA_Rrs_std.csv",
+        GLORIA_DATA_PATH / "GLORIA_Rrs.csv",
     ],
     mandatory_args=[
         "Latitude",
         "Longitude",
         "Date_Time_UTC",
+        "Skyglint_removal",
+        "Bias_removal_in_NIR",
+        "Self_shading_correction",
     ],
+    optional_args=[
+        "Distance_to_shore",
+        "Cloud_fraction",
+        "AOT",
+    ],
+    spectral_col_prefix="Rrs_mean_",
     keep_nan=False,
 )

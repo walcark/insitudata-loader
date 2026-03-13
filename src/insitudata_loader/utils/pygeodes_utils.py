@@ -89,6 +89,7 @@ def search_items_in_geodes(
     if max_cloud_cover is not None:
         query.update({"eo:cloud_cover": {"lte": max_cloud_cover}})
 
+    print(query)
     # Launch search
     return geodes.search_items(
         query=query,

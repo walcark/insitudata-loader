@@ -17,4 +17,4 @@ def visualize_item(item: Item) -> None:
     Visualize a pygeodes item.
     """
     item.show_quicklook()
-    time.sleep(10)
+    time.sleep(1)
