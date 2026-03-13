@@ -26,7 +26,7 @@ def build_slurm_to_download_l1c(
     mail: str = "kevin.walcarius@cnes.fr",
     n_cpu: int = 1,
     run: bool = False,
-) -> tuple[list[str], list[str]]:
+) -> None:
     """Create and save SLURM submit scripts to download L1C files.
 
     Eventually launch the SLURM files directly if required.
@@ -97,5 +97,3 @@ def build_slurm_to_download_l1c(
 
         script_paths.append(script_path)
         out_paths.append(path_linkto)
-
-    return (script_paths, out_paths)
