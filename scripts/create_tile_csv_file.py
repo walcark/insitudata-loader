@@ -42,7 +42,9 @@ def create_tile_and_extent_file() -> None:
     df_tiles = df_tiles.drop(columns=["bbox"])
     df_tiles = df_tiles.sort_values("tile").reset_index(drop=True)
 
-    df_tiles.to_csv(Satellite.SENTINEL2.data_path / "tiles_bbox.csv", index=False)
+    df_tiles.to_csv(
+        Satellite.SENTINEL2.data_path / "tiles_bbox.csv", index=False
+    )
 
 
 if __name__ == "__main__":

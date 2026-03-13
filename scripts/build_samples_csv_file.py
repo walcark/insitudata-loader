@@ -13,6 +13,7 @@ from insitudata_loader.transforms import (
     PlotRrs,
     SaveToCsv,
 )
+from insitudata_loader.maja import schedule_maja
 
 
 def main():
@@ -40,13 +41,15 @@ def main():
     )
 
     final_data = pipeline(data)
-    print(final_data)
 
-    print(len(final_data.df["tile"].unique()))
     tiles = final_data.df["tile"].unique()
     for tile in tiles:
         df_sel = final_data.df[final_data.df["tile"] == tile]
         print(df_sel["datemin"].min(), df_sel["datemin"].max())
+
+    entries = schedule_maja(final_data, name="val_adjeff")
+    for idx, entry in enumerate(entries):
+        print(idx, entry)
 
 
 if __name__ == "__main__":

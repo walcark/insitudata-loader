@@ -97,6 +97,11 @@ def build_tiles_csv(gdf: gpd.GeoDataFrame) -> pd.DataFrame:
         )
         .reset_index()
     )
+
+    # Drop antimeridian tiles: their merged bbox spans nearly the full longitude
+    # range and would incorrectly match any point at their latitude.
+    df = df[df["lon_max"] - df["lon_min"] < 350].reset_index(drop=True)
+
     return df
 
 
