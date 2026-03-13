@@ -62,10 +62,11 @@ def schedule_maja(
             todate = max(g) + pd.DateOffset(days=5)
             result.append(
                 {
-                    "tile": tile,
+                    "tile_id": str(tile)[1:],
                     "site": name,
                     "fromdate": fromdate.strftime("%Y-%m-%d"),
                     "todate": todate.strftime("%Y-%m-%d"),
+                    "n_cpu": 1,
                 }
             )
 
