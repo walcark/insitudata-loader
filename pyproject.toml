@@ -20,7 +20,10 @@ line-length = 77
 insitudata_loader = { path = ".", editable = true }
 
 [tool.pixi.tasks]
-build-s2-tiles-file = { cmd = "python -m scripts.create_tile_csv_file" }
+build-s2-tiles = { cmd = "python scripts/build_bbox_sentinel2.py" }
+clear-tmp = { cmd = "python scripts/clear_tmp.py" }
+get-l1c = { cmd = "python scripts/extract_s2l1c_for_gloria.py" }
+run-maja = { cmd = "python scripts/compute_s2l2a_for_gloria.py" }
 
 [tool.pixi.dependencies]
 python = "3.12.*"
