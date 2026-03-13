@@ -46,7 +46,7 @@ def init_logging(config_file: str | Path) -> None:
     _LOGGING_INITIALIZED = True
 
 
-def get_logger(name: str = "pymopsmap") -> logging.Logger:
+def get_logger(name: str = "default") -> logging.Logger:
     """
     Returns a logger configured according to the YAML file.
     If logging is not initialized yet, initializes it automatically.

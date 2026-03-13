@@ -12,14 +12,12 @@ Summary : Dataclass to represent any type of in-situ measurement
 from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 import pandas as pd
 import numpy as np
 import copy
 
 from insitudata_loader.utils import check_columns
-
-# TODO: ajouter un filtre de NaN en ligne et colonne (selon l'usage)
 
 
 @dataclass
@@ -29,7 +27,7 @@ class InSituData:
     optional_args: list[str] | None = None
     keep_nan: bool = True
     spectral_col_prefix: str | None = None
-    df: pd.DataFrame | None = None
+    df: Optional[pd.DataFrame] = None
 
     def __post_init__(self):
         """
@@ -73,7 +71,8 @@ class InSituData:
             cols = list(mandatory_args)
             if self.spectral_col_prefix is not None:
                 spectral_cols = [
-                    c for c in df.columns
+                    c
+                    for c in df.columns
                     if c.startswith(self.spectral_col_prefix)
                 ]
                 cols += spectral_cols
@@ -108,7 +107,6 @@ class InSituData:
             "InSituData.df is None; nothing to filter."
         )
 
-        # Vérif légère que l'index demandé existe bien
         missing = index.difference(self.df.index)
         assert len(missing) == 0, (
             f"Some indices are not in df.index: {list(missing[:10])}"
