@@ -13,6 +13,7 @@ from pathlib import Path
 
 ROOT_PATH = Path(__file__).resolve().parent.parent.parent.parent
 
+TMP_PATH = ROOT_PATH / ".tmp"
 DATA_PATH = ROOT_PATH / "data"
 CONFIG_PATH = ROOT_PATH / "config"
 LOGGING_PATH = CONFIG_PATH / "logging.yaml"
