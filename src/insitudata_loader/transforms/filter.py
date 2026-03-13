@@ -5,12 +5,54 @@ Author  : Kévin Walcarius
 Date    : 2026-03-13
 Version : 1.0
 License : MIT
-Summary : Pipeline steps for filtering and date manipulation.
+Summary : Generic pipeline steps for filtering, date manipulation,
+          and spatial tile location.
 """
+
+from pathlib import Path
 
 import pandas as pd
 
 from insitudata_loader.core.data import InSituData
+
+
+class TilesLocator:
+    """
+    For all sample points in `insitu`, determines the satellite tile
+    from longitude and latitude, using a tiles CSV file following the
+    canonical schema (columns: tile, lon_min, lat_min, lon_max, lat_max).
+
+    Parameters
+    ----------
+    tiles_path : Path
+        Path to the tiles CSV file for the target satellite.
+    """
+
+    def __init__(self, tiles_path: Path):
+        self.tiles_path = tiles_path
+
+    def __call__(self, insitu: InSituData) -> InSituData:
+        df_tiles = pd.read_csv(self.tiles_path)
+
+        lon_min = df_tiles["lon_min"].to_numpy()
+        lon_max = df_tiles["lon_max"].to_numpy()
+        lat_min = df_tiles["lat_min"].to_numpy()
+        lat_max = df_tiles["lat_max"].to_numpy()
+        tile_names = df_tiles["tile"].to_numpy()
+
+        tiles = []
+        for _, row in insitu.df.iterrows():
+            lon, lat = row["Longitude"], row["Latitude"]
+            mask = (
+                (lon >= lon_min)
+                & (lon <= lon_max)
+                & (lat >= lat_min)
+                & (lat <= lat_max)
+            )
+            idx = mask.nonzero()[0]
+            tiles.append(tile_names[idx[0]] if len(idx) > 0 else pd.NA)
+
+        return insitu.add_column("tile", tiles)
 
 
 class FilterDate:

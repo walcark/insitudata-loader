@@ -3,12 +3,12 @@ from pygeodes import Geodes
 from insitudata_loader.core import Pipeline
 from insitudata_loader.sources.gloria import GloriaAdapter
 from insitudata_loader.satellites.sentinel2 import (
-    TilesLocator,
     GeodesCollectionType,
     get_pygeodes_config,
     SearchOnGeodes,
 )
-from insitudata_loader.transforms import FilterDate, ComputeDayBounds
+from insitudata_loader.transforms import TilesLocator, FilterDate, ComputeDayBounds
+from insitudata_loader.utils import S2_TILES_PATH
 from insitudata_loader.visu import visualize_item
 
 
@@ -16,7 +16,7 @@ def main():
     data = GloriaAdapter(keep_nan=False).load()
 
     pipeline = Pipeline(
-        TilesLocator(),
+        TilesLocator(S2_TILES_PATH),
         FilterDate(datemin="2017-01-01", datemax="2023-01-01"),
         ComputeDayBounds(),
         SearchOnGeodes(50.0, GeodesCollectionType.L1C),
@@ -24,7 +24,7 @@ def main():
     )
 
     pipeline2 = Pipeline(
-        TilesLocator(),
+        TilesLocator(S2_TILES_PATH),
         FilterDate(datemin="2017-01-01", datemax="2023-01-01"),
         ComputeDayBounds(),
     )

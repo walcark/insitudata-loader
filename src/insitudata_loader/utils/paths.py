@@ -22,5 +22,5 @@ GLORIA_DATA_PATH = DATA_PATH / "sources/gloria_2022"
 
 # Satellites
 S2_DATA_PATH = DATA_PATH / "satellites/sentinel2"
-S2_SRF_PATH = S2_DATA_PATH / "Spectral Response Functions_Sentinel2.ods"
+S2_SRF_PATH = S2_DATA_PATH / "srf.csv"
 S2_TILES_PATH = S2_DATA_PATH / "tiles_bbox_all.csv"
