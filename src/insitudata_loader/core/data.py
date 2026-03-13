@@ -11,14 +11,13 @@ Summary : Dataclass to represent any type of in-situ measurement
 
 from __future__ import annotations
 from dataclasses import dataclass
-from functools import partial
 from pathlib import Path
 from typing import Any
 import pandas as pd
 import numpy as np
 import copy
 
-from insitudata_loader.utils import check_columns, DATA_PATH, GLORIA_DATA_PATH
+from insitudata_loader.utils import check_columns
 
 # TODO: ajouter un filtre de NaN en ligne et colonne (selon l'usage)
 
@@ -133,29 +132,3 @@ class InSituData:
 
     def save(self, filepath: Path) -> None:
         self.df.to_csv(filepath)
-
-
-GloriaInSituData = partial(
-    InSituData,
-    filepath=[
-        GLORIA_DATA_PATH / "GLORIA_meta_and_lab.csv",
-        GLORIA_DATA_PATH / "GLORIA_Rrs_mean.csv",
-        GLORIA_DATA_PATH / "GLORIA_Rrs_std.csv",
-        GLORIA_DATA_PATH / "GLORIA_Rrs.csv",
-    ],
-    mandatory_args=[
-        "Latitude",
-        "Longitude",
-        "Date_Time_UTC",
-        "Skyglint_removal",
-        "Bias_removal_in_NIR",
-        "Self_shading_correction",
-    ],
-    optional_args=[
-        "Distance_to_shore",
-        "Cloud_fraction",
-        "AOT",
-    ],
-    spectral_col_prefix="Rrs_mean_",
-    keep_nan=False,
-)
