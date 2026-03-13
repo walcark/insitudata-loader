@@ -1,11 +1,12 @@
 """
-geodes_api.py
+geodes.py
 
 Author  : Kévin Walcarius
-Date    : 2025-01-13
+Date    : 2026-03-13
 Version : 1.0
 License : MIT
-Summary : Tools to perform API calls to the GEODES portal.
+Summary : Tools to perform API calls to the GEODES portal, and a pipeline
+          step to search Sentinel-2 acquisitions for each in-situ sample.
           https://geodes-portal.cnes.fr/api/stac/items
 """
 
@@ -19,8 +20,12 @@ from pygeodes.utils.datetime_utils import (
 )
 from pygeodes import Geodes, Config
 from pygeodes.geodes import Item
+from rich.progress import track
+import pandas as pd
 
-from insitudata_loader.utils import CONFIG_PATH, get_logger
+from insitudata_loader.core.data import InSituData
+from insitudata_loader.utils.paths import CONFIG_PATH
+from insitudata_loader.utils.logging import get_logger
 
 get_logger(__name__)
 
@@ -68,7 +73,6 @@ def search_items_in_geodes(
     Returns:
         list[Item]: the `pygeodes.Item` objects found.
     """
-    # Ensure dates are readable by the GEODES API
     if isinstance(datemin, datetime):
         datemin = datetime_to_str(datemin)
     datemin = complete_datetime_from_str(datemin)
@@ -77,7 +81,6 @@ def search_items_in_geodes(
         datemax = datetime_to_str(datemax)
     datemax = complete_datetime_from_str(datemax)
 
-    # Build query
     query = {
         "start_datetime": {"gte": datemin},
         "end_datetime": {"lte": datemax},
@@ -90,10 +93,46 @@ def search_items_in_geodes(
         query.update({"eo:cloud_cover": {"lte": max_cloud_cover}})
 
     print(query)
-    # Launch search
     return geodes.search_items(
         query=query,
         collections=[collection.value],
         return_df=False,
         get_all=True,
     )
+
+
+class SearchOnGeodes:
+    """
+    Searches GEODES items for each sample (tile + day bounds),
+    and adds a new column named after `collection_type.name`.
+    """
+
+    def __init__(
+        self,
+        max_cloud: float,
+        collection_type: GeodesCollectionType,
+    ):
+        self.max_cloud = max_cloud
+        self.collection_type = collection_type
+
+    def __call__(self, insitu: InSituData) -> InSituData:
+        df = insitu.df.copy()
+
+        geodes = Geodes(conf=get_pygeodes_config())
+
+        new_col = []
+        it = df.iterrows()
+
+        for _, row in track(it, total=len(df), description="GEODES search"):
+            items = search_items_in_geodes(
+                collection=self.collection_type,
+                datemin=getattr(row, "datemin"),
+                datemax=getattr(row, "datemax"),
+                tile=getattr(row, "tile"),
+                max_cloud_cover=self.max_cloud,
+                geodes=geodes,
+            )
+
+            new_col.append(items[0] if len(items) >= 1 else pd.NA)
+
+        return insitu.add_column(self.collection_type.name, new_col)

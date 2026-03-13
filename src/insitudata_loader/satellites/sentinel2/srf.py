@@ -1,5 +1,5 @@
 """
-s2_srf.py
+srf.py
 
 Author  : Kévin Walcarius
 Date    : 2026-03-13
@@ -12,7 +12,7 @@ Summary : Utility class to load Sentinel-2 Spectral Response Functions
 import numpy as np
 import pandas as pd
 
-from .paths import S2_SRF_PATH
+from insitudata_loader.utils.paths import S2_SRF_PATH
 
 
 class S2SRF:
@@ -72,9 +72,6 @@ class S2SRF:
         srf_vals = srf.loc[common].to_numpy(dtype=float)
         rrs_vals = spectrum.loc[common].to_numpy(dtype=float)
 
-        # Exclude wavelengths where Rrs is NaN from both numerator and
-        # denominator, so a missing wavelength doesn't invalidate the
-        # whole band integral.
         valid = ~np.isnan(rrs_vals)
         denom = srf_vals[valid].sum()
         if denom == 0:
