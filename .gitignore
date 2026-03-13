@@ -5,4 +5,4 @@
 data/out/*
 *.pyc 
 __pycache_/
-
+.tmp/**

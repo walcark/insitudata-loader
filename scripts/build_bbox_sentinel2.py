@@ -16,6 +16,9 @@ import requests
 from tqdm import tqdm
 
 from insitudata_loader.satellites import Satellite
+from insitudata_loader.utils import get_logger
+
+logger = get_logger(__name__)
 
 TILING_GRID_URL = (
     "https://github.com/justinelliotmeyers/Sentinel-2-Shapefile-Index"
@@ -26,7 +29,7 @@ OUTPUT_PATH = Satellite.SENTINEL2.tiles_path
 
 
 def download_and_extract(url: str, extract_dir: Path) -> None:
-    print(f"Downloading tiling grid from:\n  {url}")
+    logger.info("Downloading tiling grid from: %s", url)
     response = requests.get(url, stream=True, timeout=300)
     response.raise_for_status()
 
@@ -42,7 +45,7 @@ def download_and_extract(url: str, extract_dir: Path) -> None:
 
     with zipfile.ZipFile(io.BytesIO(data)) as zf:
         zf.extractall(extract_dir)
-    print(f"Extracted to {extract_dir}")
+    logger.info("Extracted to %s", extract_dir)
 
 
 def load_shapefile(extract_dir: Path) -> gpd.GeoDataFrame:
@@ -51,13 +54,11 @@ def load_shapefile(extract_dir: Path) -> gpd.GeoDataFrame:
         raise FileNotFoundError(
             f"No sentinel_2_index_shapefile.shp found in {extract_dir}"
         )
-    print(f"Reading shapefile: {shp_files[0]}")
+    logger.info("Reading shapefile: %s", shp_files[0])
     return gpd.read_file(shp_files[0])
 
 
 def build_tiles_csv(gdf: gpd.GeoDataFrame) -> pd.DataFrame:
-    print("Columns:", gdf.columns.tolist())
-
     # The shapefile uses 'Name' for tile ID
     tile_col = next(
         (
@@ -67,7 +68,7 @@ def build_tiles_csv(gdf: gpd.GeoDataFrame) -> pd.DataFrame:
         ),
         gdf.columns[0],
     )
-    print(f"Using '{tile_col}' as tile name column")
+    logger.info("Using '%s' as tile name column", tile_col)
 
     bounds = gdf.geometry.bounds
     tile_names = gdf[tile_col].str.strip()
@@ -109,12 +110,12 @@ if __name__ == "__main__":
     if not list(EXTRACT_DIR.rglob("sentinel_2_index_shapefile.shp")):
         download_and_extract(TILING_GRID_URL, EXTRACT_DIR)
     else:
-        print(f"Shapefile already extracted in {EXTRACT_DIR}, skipping download.")
+        logger.info("Shapefile already extracted in %s, skipping download.", EXTRACT_DIR)
 
     gdf = load_shapefile(EXTRACT_DIR)
-    print(f"Total tiles in grid: {len(gdf)}")
+    logger.info("Total tiles in grid: %d", len(gdf))
 
     df = build_tiles_csv(gdf)
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(OUTPUT_PATH, index=False)
-    print(f"Saved {len(df)} tiles to {OUTPUT_PATH}")
+    logger.info("Saved %d tiles to %s", len(df), OUTPUT_PATH)
