@@ -70,3 +70,51 @@ slurm_l1c = dedent("""
     done
     
 """)
+
+
+maja_input_folders = dedent("""
+    [Maja_Inputs]
+    repWork= REPLACEME
+    repGipp= /work/CESBIO/projects/Maja/maja-gipp{maja_id}
+    repMNT = /work/CESBIO/projects/Maja/DTM_120
+    repL1  = {L1C_ROOT}
+    repL2  = {L2A_ROOT}
+
+    exeMaja=/softs/projets/MAJA/{maja_version}/bin/maja
+
+    repCAMS={CAMS_ROOT}
+
+    [DTM_Creation]
+    repRAW = {DTM_ROOT}/raw
+    repGSW = {DTM_ROOT}/gsw
+""")
+
+
+slurm_maja = dedent("""
+    #!/bin/bash
+    #SBATCH --job-name={job_name}
+    #SBATCH --output={TMP_DIR}/{job_name}.out
+    #SBATCH --error={TMP_DIR}/{job_name}.err
+    #SBATCH -N 1
+    #SBATCH -n 8
+    #SBATCH --mem-per-cpu=8G
+    #SBATCH --time=72:00:00 
+    #SBATCH --account=cesbio
+    #SBATCH --export=none
+
+    cd ${{SLURM_SUBMIT_DIR}}
+
+    cat {path_folders_file} | sed "s|REPLACEME|$TMPDIR|g" > {TMP_DIR}/folders.txt
+
+    /softs/projets/MAJA/{maja_version}/bin/startmaja -f \\
+        {TMP_DIR}/folders.txt \\
+        -t {tile_id} \\
+        -s {site} \\
+        -d {fromdate} \\
+        -e {todate} \\
+        --userconf {CONF_ROOT}/userconf-{maja_id}/ \\
+        -y \\
+        --overwrite --skip_errors {cams_arg}
+
+    chmod -R g+rx {path_linkto}
+""")

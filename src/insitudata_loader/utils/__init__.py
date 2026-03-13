@@ -14,7 +14,7 @@ from .time_utils import (
     create_periods_for_cpu,
 )
 from .pandas_utils import check_columns
-from .string_utils import dedent
+from .string_utils import dedent, ensure_correct_tile_pattern
 from .logging import get_logger
 
 __all__ = [
@@ -30,6 +30,7 @@ __all__ = [
     "DateLike",
     "to_date",
     "to_str",
+    "ensure_correct_tile_pattern",
     "regular_timestamps",
     "create_periods_for_cpu",
 ]
