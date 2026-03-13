@@ -1,22 +1,7 @@
-from .transform import (
-    TilesLocator,
-    FilterDate,
-    ComputeDayBounds,
-    ComputeS2BandRrs,
-    PlotRrs,
-    SaveToCsv,
-    SearchOnGeodes,
-)
-from .data import InSituData, GloriaInSituData
+from .data import InSituData
+from .pipeline import Pipeline
 
 __all__ = [
-    "TilesLocator",
-    "FilterDate",
-    "ComputeDayBounds",
-    "ComputeS2BandRrs",
-    "PlotRrs",
-    "SaveToCsv",
-    "SearchOnGeodes",
     "InSituData",
-    "GloriaInSituData",
+    "Pipeline",
 ]
