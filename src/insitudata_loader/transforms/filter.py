@@ -9,30 +9,31 @@ Summary : Generic pipeline steps for filtering, date manipulation,
           and spatial tile location.
 """
 
-from pathlib import Path
+from __future__ import annotations
 
 import pandas as pd
 
 from insitudata_loader.core.data import InSituData
+from insitudata_loader.satellites.satellite import Satellite
 
 
 class TilesLocator:
     """
     For all sample points in `insitu`, determines the satellite tile
-    from longitude and latitude, using a tiles CSV file following the
-    canonical schema (columns: tile, lon_min, lat_min, lon_max, lat_max).
+    from longitude and latitude, using the canonical tiles CSV file for
+    the given satellite (schema: tile, lon_min, lat_min, lon_max, lat_max).
 
     Parameters
     ----------
-    tiles_path : Path
-        Path to the tiles CSV file for the target satellite.
+    satellite : Satellite
+        The satellite whose tiling grid to use.
     """
 
-    def __init__(self, tiles_path: Path):
-        self.tiles_path = tiles_path
+    def __init__(self, satellite: Satellite):
+        self.satellite = satellite
 
     def __call__(self, insitu: InSituData) -> InSituData:
-        df_tiles = pd.read_csv(self.tiles_path)
+        df_tiles = pd.read_csv(self.satellite.tiles_path)
 
         lon_min = df_tiles["lon_min"].to_numpy()
         lon_max = df_tiles["lon_max"].to_numpy()

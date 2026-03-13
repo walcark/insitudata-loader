@@ -4,8 +4,7 @@ Format the CSV file with sample points from the GLORIA dataset.
 
 from insitudata_loader.core import Pipeline
 from insitudata_loader.sources.gloria import GloriaAdapter
-from insitudata_loader.satellites import SRF
-from insitudata_loader.satellites.sentinel2 import SearchOnGeodes
+from insitudata_loader.satellites import SRF, Satellite
 from insitudata_loader.transforms import (
     TilesLocator,
     FilterDate,
@@ -14,17 +13,16 @@ from insitudata_loader.transforms import (
     PlotRrs,
     SaveToCsv,
 )
-from insitudata_loader.utils import S2_SRF_PATH, S2_TILES_PATH
 
 
 def main():
     data = GloriaAdapter(keep_nan=False).load()
 
     pipeline = Pipeline(
-        TilesLocator(S2_TILES_PATH),
+        TilesLocator(Satellite.SENTINEL2),
         FilterDate(datemin="2017-01-01", datemax="2025-01-01"),
         ConvolveToSatelliteBands(
-            srf=SRF(S2_SRF_PATH),
+            srf=SRF(Satellite.SENTINEL2),
             sat=["S2A", "S2B"],
             bands=["B1", "B2", "B3", "B4", "B5", "B6", "B7"],
         ),

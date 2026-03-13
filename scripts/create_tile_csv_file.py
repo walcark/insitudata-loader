@@ -1,11 +1,11 @@
 from pygeodes import Geodes
 import pandas as pd
 
-from insitudata_loader.utils import S2_DATA_PATH
-from insitudata_loader.satellites.sentinel2 import (
-    search_items_in_geodes,
-    get_pygeodes_config,
+from insitudata_loader.satellites import (
+    Satellite,
     GeodesCollectionType,
+    get_pygeodes_config,
+    search_items_in_geodes,
 )
 
 
@@ -16,7 +16,7 @@ def create_tile_and_extent_file() -> None:
     """
     items = search_items_in_geodes(
         geodes=Geodes(conf=get_pygeodes_config()),
-        collection=GeodesCollectionType.L2A,
+        collection=GeodesCollectionType.S2_L2A,
         datemin="2020-01-01",
         datemax="2020-01-10",
     )
@@ -42,7 +42,7 @@ def create_tile_and_extent_file() -> None:
     df_tiles = df_tiles.drop(columns=["bbox"])
     df_tiles = df_tiles.sort_values("tile").reset_index(drop=True)
 
-    df_tiles.to_csv(S2_DATA_PATH / "tiles_bbox.csv", index=False)
+    df_tiles.to_csv(Satellite.SENTINEL2.data_path / "tiles_bbox.csv", index=False)
 
 
 if __name__ == "__main__":

@@ -14,10 +14,12 @@ wavelength  (index) : integer wavelength in nm
                       e.g. S2A_B1, S2A_B2, ..., S2B_B1, ..., L8_B1, ...
 """
 
-from pathlib import Path
+from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+
+from .satellite import Satellite
 
 
 class SRF:
@@ -27,17 +29,17 @@ class SRF:
 
     Parameters
     ----------
-    filepath : Path
-        Path to a CSV file following the canonical SRF schema.
+    satellite : Satellite
+        The satellite whose SRF file to load.
 
     Attributes
     ----------
     SATELLITES : list[str]
-        Satellite identifiers derived from column names (e.g. ["S2A", "S2B"]).
+        Instrument identifiers derived from column names (e.g. ["S2A", "S2B"]).
     """
 
-    def __init__(self, filepath: Path):
-        df = pd.read_csv(filepath, index_col="wavelength")
+    def __init__(self, satellite: Satellite):
+        df = pd.read_csv(satellite.srf_path, index_col="wavelength")
         self._df = df
         self.SATELLITES: list[str] = sorted(
             {col.rsplit("_", 1)[0] for col in df.columns}
@@ -54,7 +56,7 @@ class SRF:
         band : str
             Band name, e.g. "B2", "B3".
         satellite : str
-            Satellite identifier, e.g. "S2A", "S2B".
+            Instrument identifier, e.g. "S2A", "S2B".
 
         Returns
         -------

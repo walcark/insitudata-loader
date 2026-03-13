@@ -6,7 +6,7 @@ Date    : 2026-03-13
 Version : 1.0
 License : MIT
 Summary : Tools to perform API calls to the GEODES portal, and a pipeline
-          step to search Sentinel-2 acquisitions for each in-situ sample.
+          step to search satellite acquisitions for each in-situ sample.
           https://geodes-portal.cnes.fr/api/stac/items
 """
 
@@ -31,8 +31,8 @@ get_logger(__name__)
 
 
 class GeodesCollectionType(Enum):
-    L1C = "PEPS_S2_L1C"
-    L2A = "THEIA_REFLECTANCE_SENTINEL2_L2A"
+    S2_L1C = "PEPS_S2_L1C"
+    S2_L2A = "THEIA_REFLECTANCE_SENTINEL2_L2A"
 
 
 def get_pygeodes_config(**kwargs: dict[str, Any]) -> Config:

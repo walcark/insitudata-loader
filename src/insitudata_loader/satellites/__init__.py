@@ -1,4 +1,12 @@
+from .satellite import Satellite
 from .srf import SRF
-from . import sentinel2
+from .geodes import GeodesCollectionType, get_pygeodes_config, search_items_in_geodes, SearchOnGeodes
 
-__all__ = ["SRF", "sentinel2"]
+__all__ = [
+    "Satellite",
+    "SRF",
+    "GeodesCollectionType",
+    "get_pygeodes_config",
+    "search_items_in_geodes",
+    "SearchOnGeodes",
+]
