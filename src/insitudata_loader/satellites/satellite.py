@@ -28,4 +28,4 @@ class Satellite(Enum):
 
     @property
     def tiles_path(self) -> Path:
-        return self.data_path / "tiles_bbox_all.csv"
+        return self.data_path / "tiles_bbox.csv"
